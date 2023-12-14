@@ -13,6 +13,12 @@ stop-dev: ## Stop the local development mode
 	pipenv run supervisorctl shutdown
 	docker-compose stop
 
+build-image: ## Build docker image
+	docker build -t jsvisa/web3alert:v$(shell date +"%Y%m%d") .
+
+push-image: build-image ## Push docker image
+	docker push jsvisa/web3alert:v$(shell date +"%Y%m%d")
+
 test:  ## Run pytest for files under ./tests
 	PYTHONPATH=. pipenv run python -m pytest tests
 

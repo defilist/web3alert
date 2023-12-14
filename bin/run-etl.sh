@@ -28,5 +28,5 @@ mkdir -p logs
 exec pipenv run etl.py \
     --database-url="$DATABASE_URL" \
     --chain=ethereum \
-    --provider="$WEB3_PROVIDER_URI" \
+    --provider="$BLOCKCHAIN_ETL_PROVIDER_URI" \
     --start-block=-1

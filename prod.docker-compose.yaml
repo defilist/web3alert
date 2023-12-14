@@ -1,0 +1,49 @@
+version: '2.1'
+
+services:
+  db:
+    image: postgres:12.10-alpine
+    container_name: web3-db
+    command: ['postgres', '-cshared_preload_libraries=pg_stat_statements']
+    # security_opt:
+    #   - seccomp=unconfined
+    volumes:
+      # - ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./data/pgsql:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-root}
+    restart: unless-stopped
+    ports:
+      - '9432:5432'
+
+  api:
+    image: jsvisa/web3alert:v20231214
+    container_name: web3-api
+    # security_opt:
+    #   - seccomp=unconfined
+    command:
+      - 'python3'
+      - '/app/api.py'
+    env_file:
+      - .env
+    volumes:
+      - ./.priv:/app/.priv
+      - ./cache:/app/cache
+      - ./logs:/app/logs
+    ports:
+      - '8800:8000'
+
+  etl:
+    image: jsvisa/web3alert:v20231214
+    container_name: web3-etl
+    # security_opt:
+    #   - seccomp=unconfined
+    command:
+      - 'python3'
+      - '/app/etl.py'
+    env_file:
+      - .env
+    volumes:
+      - ./.priv:/app/.priv
+      - ./cache:/app/cache
+      - ./logs:/app/logs
