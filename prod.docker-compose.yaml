@@ -19,11 +19,17 @@ services:
   api:
     image: jsvisa/web3alert:v20231214
     container_name: web3-api
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '5'
     # security_opt:
     #   - seccomp=unconfined
     command:
       - 'python3'
       - '/app/api.py'
+      - '--auto-create-db'
     env_file:
       - .env
     volumes:
@@ -36,6 +42,11 @@ services:
   etl:
     image: jsvisa/web3alert:v20231214
     container_name: web3-etl
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '5'
     # security_opt:
     #   - seccomp=unconfined
     command:

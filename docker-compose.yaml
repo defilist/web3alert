@@ -19,6 +19,11 @@ services:
   api:
     build: .
     container_name: web3-api
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '5'
     # security_opt:
     #   - seccomp=unconfined
     command:
@@ -36,11 +41,17 @@ services:
   etl:
     build: .
     container_name: web3-etl
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '5'
     # security_opt:
     #   - seccomp=unconfined
     command:
       - 'python3'
       - '/app/etl.py'
+      - '--auto-create-db'
     env_file:
       - .env
     volumes:

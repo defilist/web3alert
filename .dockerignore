@@ -1,4 +1,6 @@
-data
-cache
-server
-docker
+# exclude everything
+*
+
+!*.py
+!requirements.txt
+!hack
