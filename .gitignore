@@ -1,0 +1,5 @@
+server/web3soc
+*.env
+.priv/*
+logs/*
+cache/
