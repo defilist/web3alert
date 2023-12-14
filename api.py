@@ -15,7 +15,7 @@ import sqlalchemy as sa
 from sqlalchemy.orm import sessionmaker, Session
 import rule_engine
 
-from hack.model import Alert, Rule, Receiver, Base, IRule, IReceiver
+from hack.model import Alert, Rule, Receiver, IRule, IReceiver, INIT_SQL
 
 logging.basicConfig(
     format="[%(asctime)s] - %(levelname)s - %(message)s", level=logging.INFO
@@ -39,9 +39,11 @@ def create_db_engine(database_url: str, schema_name="web3", auto_create: bool = 
     )
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     if auto_create:
-        if not engine.dialect.has_schema(engine, schema_name):
-            engine.execute(sa.schema.CreateSchema(schema_name))
-        Base.metadata.create_all(bind=engine)
+        # if not engine.dialect.has_schema(engine, schema_name):
+        #     engine.execute(sa.schema.CreateSchema(schema_name))
+        # Base.metadata.create_all(bind=engine)
+        init_sql = INIT_SQL.format(schema=schema_name)
+        engine.execute(init_sql)
 
 
 def get_db():

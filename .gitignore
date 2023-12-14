@@ -3,3 +3,4 @@ server/web3soc
 .priv/*
 logs/*
 cache/
+data/

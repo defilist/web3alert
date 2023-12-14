@@ -4,12 +4,13 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-supervisor = "*"
-superlance = "*"
 slacker = "*"
-prometheus_client = "*"
-multicall-py = "*"
 requests = "==2.28.2"
+fastapi = "*"
+uvicorn = "*"
+SQLAlchemy = "*"
+typer = "*"
+multicall-py = "*"
 blockchain-etl = {git = "https://github.com/jsvisa/blockchain-etl@v3.5.0"}
 
 [dev-packages]
@@ -18,6 +19,9 @@ black = "*"
 ipython = "*"
 jupyterlab = "*"
 pytest = "*"
+supervisor = "*"
+superlance = "*"
+prometheus_client = "*"
 
 [pipenv]
 allow_prereleases = true

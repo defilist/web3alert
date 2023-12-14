@@ -25,3 +25,6 @@ setup:  ## Run pipenv install to setup the environment
 
 install: ## Run pipenv install to install new pip packages
 	PIPENV_VENV_IN_PROJECT=1 pipenv install --skip-lock
+
+freeze: ## Run pip freeze to generage requirements.txt
+	PIPENV_VENV_IN_PROJECT=1 pipenv run pip freeze > requirements.txt

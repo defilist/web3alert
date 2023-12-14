@@ -68,3 +68,56 @@ class Alert(Base):
     created_at: str = Column(DateTime, server_default=sa.func.current_timestamp())
     updated_at: str = Column(DateTime, server_default=sa.func.current_timestamp())
     deleted_at: str = Column(DateTime, server_default=None)
+
+
+INIT_SQL = """
+CREATE SCHEMA IF NOT EXISTS {schema};
+
+CREATE TABLE IF NOT EXISTS {schema}.rules (
+    id              SERIAL,
+    name            TEXT NOT NULL,
+    scope           TEXT NOT NULL DEFAULT 'block',
+    _where          TEXT NOT NULL,
+    description     TEXT,
+    receivers       TEXT[] NOT NULL,
+    output          TEXT,
+    labels          JSONB,
+    chain           TEXT NOT NULL DEFAULT 'ethereum',
+    created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (name)
+);
+CREATE INDEX IF NOT EXISTS webe3_rules_chain_idx ON {schema}.rules (chain);
+CREATE INDEX IF NOT EXISTS webe3_rules_where_idx ON {schema}.rules (_where);
+
+CREATE TABLE IF NOT EXISTS {schema}.receivers (
+    id              SERIAL,
+    name            TEXT NOT NULL,
+    receiver        TEXT NOT NULL,
+    init_args       JSONB,
+    created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (name)
+);
+
+CREATE TABLE IF NOT EXISTS {schema}.alerts (
+    id              TEXT,
+    block_timestamp TIMESTAMP NOT NULL,
+    block_number    BIGINT NOT NULL,
+    hash            TEXT NOT NULL,
+    rule_id         TEXT NOT NULL,
+    scope           TEXT NOT NULL,
+    chain           TEXT NOT NULL DEFAULT 'ethereum',
+    output          TEXT,
+    labels          JSONB,
+    created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at      TIMESTAMP DEFAULT NULL,
+
+    PRIMARY KEY (block_timestamp, hash, rule_id)
+);
+
+CREATE INDEX IF NOT EXISTS {schema}_alerts_id_idx ON {schema}.alerts(id);
+"""

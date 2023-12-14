@@ -11,7 +11,6 @@ from bitcoinetl.streaming.btc_streamer_adapter import BtcStreamerAdapter
 from blockchainetl.alert.rule_set import RuleSets
 from blockchainetl.cli.utils import (
     extract_cmdline_kwargs,
-    global_click_options,
     pick_random_provider_uri,
     str2bool,
 )
@@ -35,7 +34,13 @@ from hack.alert_exporter import AlertExporter
     )
 )
 @click.pass_context
-@global_click_options
+@click.option(
+    "-c",
+    "--chain",
+    default="ethereum",
+    show_default=True,
+    help="The chain network to connect to.",
+)
 @click.option(
     "-l",
     "--last-synced-block-file",
