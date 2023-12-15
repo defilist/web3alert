@@ -12,7 +12,6 @@ Base = declarative_base()
 class Rule(Base):
     __tablename__ = "rules"
 
-    id: int = Column(Integer, autoincrement=True)
     name: str = Column(String, primary_key=True)
     scope: str = Column(String, default="block")
     where: str = Column(String, name="_where", index=True)
@@ -27,19 +26,18 @@ class Rule(Base):
 
 class IRule(BaseModel):
     name: str
-    scope: str
+    scope: Optional[str] = "block"
     where: str
     description: Optional[str]
     receivers: List[str]
-    output: str
-    labels: Dict[str, str]
+    output: Optional[str]
+    labels: Optional[Dict[str, str]]
     chain: Optional[str] = "ethereum"
 
 
 class Receiver(Base):
     __tablename__ = "receivers"
 
-    id: int = Column(Integer, autoincrement=True)
     name: str = Column(String, primary_key=True)
     receiver: str = Column(String)
     init_args: Optional[Dict[str, str]] = Column(JSONB)
