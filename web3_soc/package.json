@@ -1,0 +1,13 @@
+{
+  "name": "web3Soc",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "yarn plugin-helpers build",
+    "plugin-helpers": "node ../../scripts/plugin_helpers",
+    "osd": "node ../../scripts/osd"
+  },
+  "dependencies": {
+    "js-yaml": "^3.14.0"
+  }
+}

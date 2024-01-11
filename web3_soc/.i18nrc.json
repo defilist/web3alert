@@ -1,0 +1,7 @@
+{
+  "prefix": "web3Soc",
+  "paths": {
+    "web3Soc": "."
+  },
+  "translations": ["translations/ja-JP.json"]
+}
