@@ -9,6 +9,8 @@ from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from fastapi_pagination import Page, add_pagination
 from fastapi_pagination.ext.sqlalchemy import paginate
+from fastapi.middleware.cors import CORSMiddleware
+
 
 import typer
 from typer import Typer
@@ -27,6 +29,13 @@ logging.basicConfig(
 
 app = FastAPI()
 add_pagination(app)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 cli = Typer()
 
 engine = None
@@ -227,6 +236,21 @@ async def get_alerts(db: Session = Depends(get_db), chain: Optional[str] = None,
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content=jsonable_encoder({"msg": f"Error getting alerts"}),
+        )
+
+@app.get("/options/rules", response_model=list[str])
+async def get_rule_options(db: Session = Depends(get_db)):
+    try:
+        rules = db.query(Rule).all()
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content=jsonable_encoder([r.name for r in rules]),
+        )
+    except Exception as e:
+        logging.error(f"Error getting rules: {e}")
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content=jsonable_encoder({"msg": f"Error getting rules"}),
         )
 
 @cli.command("inject", help="Inject random data for testing")
