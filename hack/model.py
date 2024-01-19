@@ -1,4 +1,5 @@
 from typing import Optional, Dict, List
+from datetime import datetime
 from pydantic import BaseModel
 import sqlalchemy as sa
 from sqlalchemy import Column, Integer, String, ARRAY, DateTime
@@ -55,7 +56,7 @@ class Alert(Base):
     __tablename__ = "alerts"
 
     id: str = Column(String, index=True)
-    block_timestamp = Column(DateTime, primary_key=True)
+    block_timestamp: int = Column(DateTime, primary_key=True)
     block_number: int = Column(Integer, index=True)
     hash: str = Column(String, primary_key=True)
     rule_name: str = Column(String, index=True, primary_key=True)
@@ -63,9 +64,27 @@ class Alert(Base):
     scope: str = Column(String)
     output: str = Column(String)
     labels: Dict[str, str] = Column(JSONB, nullable=True)
-    created_at: str = Column(DateTime, server_default=sa.func.current_timestamp())
-    updated_at: str = Column(DateTime, server_default=sa.func.current_timestamp())
-    deleted_at: str = Column(DateTime, server_default=None)
+    created_at: int = Column(DateTime, server_default=sa.func.current_timestamp())
+    updated_at: int = Column(DateTime, server_default=sa.func.current_timestamp())
+    deleted_at: Optional[int] = Column(DateTime, server_default=None)
+    
+
+class AlertResponse(BaseModel):
+    id: str
+    block_timestamp: datetime
+    block_number: int
+    hash: str
+    rule_name: str
+    chain: str
+    scope: str
+    output: str
+    labels: Dict[str, str]
+    created_at: datetime
+    
+    class Config: 
+        json_encoders = {
+            datetime: lambda v: int(v.timestamp()),
+        }
 
 
 INIT_SQL = """

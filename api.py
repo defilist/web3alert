@@ -4,7 +4,7 @@ import os
 import logging
 import uvicorn
 from fastapi import status
-from fastapi import FastAPI, Depends, Query
+from fastapi import FastAPI, Depends
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from fastapi_pagination import Page, add_pagination
@@ -18,7 +18,7 @@ import sqlalchemy as sa
 from sqlalchemy.orm import sessionmaker, Session
 import rule_engine
 
-from hack.model import Alert, Rule, Receiver, IRule, IReceiver, INIT_SQL
+from hack.model import Alert, AlertResponse, Rule, Receiver, IRule, IReceiver, INIT_SQL
 
 logging.basicConfig(
     format="[%(asctime)s] - %(levelname)s - %(message)s", level=logging.INFO
@@ -26,7 +26,7 @@ logging.basicConfig(
 
 
 app = FastAPI()
-app = add_pagination(app)
+add_pagination(app)
 cli = Typer()
 
 engine = None
@@ -209,19 +209,25 @@ async def delete_receiver(name: str, db: Session = Depends(get_db)):
         )
         
 
-@app.get("/alerts", response_model=Page[Alert])
-async def get_alerts(db: Session = Depends(get_db), chain: Optional[str] = Query(default=None), rule_name: Optional[str] = Query(default=None)):
-    # find all alerts for a given chain and rule_name (if specified) with pagination
-    query = db.query(Alert)
-    if chain:
-        query = query.filter(Alert.chain == chain)
-    if rule_name:
-        query = query.filter(Alert.rule_name == rule_name)
-    alerts = paginate(db, query.order_by(Alert.block_number.desc()))
-    return JSONResponse(
-        status_code=status.HTTP_200_OK,
-        content=jsonable_encoder(alerts),
-    )
+@app.get("/alerts", response_model=Page[AlertResponse])
+async def get_alerts(db: Session = Depends(get_db), chain: Optional[str] = None, rule_name: Optional[str] = None):
+    try:
+        query = db.query(Alert).filter(Alert.deleted_at == None)
+        if chain:
+            query = query.filter(Alert.chain == chain)
+        if rule_name:
+            query = query.filter(Alert.rule_name == rule_name)
+        page = paginate(query.order_by(Alert.block_number.desc()))
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content=jsonable_encoder(page),
+        )
+    except Exception as e:
+        logging.error(f"Error getting alerts: {e}")
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content=jsonable_encoder({"msg": f"Error getting alerts"}),
+        )
 
 @cli.command("inject", help="Inject random data for testing")
 def inject(
@@ -232,6 +238,7 @@ def inject(
 ):
     from faker import Faker
     from faker.providers import DynamicProvider
+    import uuid
     import random
     random.seed(0)
     Faker.seed(0)
@@ -303,6 +310,7 @@ def inject(
             output = fake.sentence(nb_words=10)
             labels = fake.pydict(nb_elements=3, value_types=(str, str))
             alert = Alert(
+                id=str(uuid.uuid4()),
                 block_timestamp=block_timestamp,
                 block_number=block_number,
                 hash=hash,
