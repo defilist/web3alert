@@ -219,13 +219,17 @@ async def delete_receiver(name: str, db: Session = Depends(get_db)):
         
 
 @app.get("/alerts", response_model=Page[AlertResponse])
-async def get_alerts(db: Session = Depends(get_db), chain: Optional[str] = None, rule_name: Optional[str] = None):
+async def get_alerts(db: Session = Depends(get_db), chain: Optional[str] = None, rule_name: Optional[str] = None, start: Optional[int]=None, end: Optional[int]=None):
     try:
         query = db.query(Alert).filter(Alert.deleted_at == None)
         if chain:
             query = query.filter(Alert.chain == chain)
         if rule_name:
             query = query.filter(Alert.rule_name == rule_name)
+        if start:
+            query = query.filter(Alert.block_number >= start)
+        if end:
+            query = query.filter(Alert.block_number <= end)
         page = paginate(query.order_by(Alert.block_number.desc()))
         return JSONResponse(
             status_code=status.HTTP_200_OK,
