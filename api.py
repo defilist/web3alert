@@ -270,7 +270,7 @@ def inject(
     create_db_engine(database_url, auto_create=True)
 
     fake = Faker()
-    fake.add_provider(DynamicProvider(provider_name="chain", elements=["mainnet", "bsc", "polygon", "optimistic", "avalanche", "sui", "arbitrum"]))
+    fake.add_provider(DynamicProvider(provider_name="chain", elements=["mainnet", "bsc", "polygon", "optimism", "avalanche", "sui", "arbitrum"]))
     fake.add_provider(DynamicProvider(provider_name="scope", elements=["block", "transaction", "receipt"]))
     
     db = SessionLocal()
