@@ -4,3 +4,4 @@ server/web3soc
 logs/*
 cache/
 data/
+venv/

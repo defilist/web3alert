@@ -58,7 +58,7 @@ class Alert(Base):
     block_timestamp = Column(DateTime, primary_key=True)
     block_number: int = Column(Integer, index=True)
     hash: str = Column(String, primary_key=True)
-    rule_id: str = Column(String, index=True, primary_key=True)
+    rule_name: str = Column(String, index=True, primary_key=True)
     chain: Optional[str] = Column(String, default="ethereum")
     scope: str = Column(String)
     output: str = Column(String)
@@ -105,7 +105,7 @@ CREATE TABLE IF NOT EXISTS {schema}.alerts (
     block_timestamp TIMESTAMP NOT NULL,
     block_number    BIGINT NOT NULL,
     hash            TEXT NOT NULL,
-    rule_id         TEXT NOT NULL,
+    rule_name         TEXT NOT NULL,
     scope           TEXT NOT NULL,
     chain           TEXT NOT NULL DEFAULT 'ethereum',
     output          TEXT,
@@ -114,7 +114,7 @@ CREATE TABLE IF NOT EXISTS {schema}.alerts (
     updated_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at      TIMESTAMP DEFAULT NULL,
 
-    PRIMARY KEY (block_timestamp, hash, rule_id)
+    PRIMARY KEY (block_timestamp, hash, rule_name)
 );
 
 CREATE INDEX IF NOT EXISTS {schema}_alerts_id_idx ON {schema}.alerts(id);

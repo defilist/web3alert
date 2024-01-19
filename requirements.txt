@@ -29,6 +29,7 @@ ethereum-dasm==0.1.5
 evmdasm==0.1.10
 exceptiongroup==1.2.0
 fastapi==0.105.0
+fastapi-pagination==0.12.14
 frozenlist==1.4.0
 greenlet==3.0.2
 h11==0.14.0

@@ -4,12 +4,15 @@ import os
 import logging
 import uvicorn
 from fastapi import status
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, Query
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
+from fastapi_pagination import Page, add_pagination
+from fastapi_pagination.ext.sqlalchemy import paginate
 
 import typer
 from typer import Typer
+from typing import Optional
 
 import sqlalchemy as sa
 from sqlalchemy.orm import sessionmaker, Session
@@ -23,6 +26,7 @@ logging.basicConfig(
 
 
 app = FastAPI()
+app = add_pagination(app)
 cli = Typer()
 
 engine = None
@@ -56,7 +60,6 @@ def get_db():
 
 
 app.dependency_overrides[get_db] = get_db
-
 
 @app.post("/rules")
 async def create_rule(
@@ -103,7 +106,7 @@ async def create_rule(
     )
 
 
-@app.get("/rules/")
+@app.get("/rules")
 async def get_rules(db: Session = Depends(get_db)):
     rule = db.query(Rule).all()
     return JSONResponse(
@@ -120,22 +123,51 @@ async def get_rule(name: str, db: Session = Depends(get_db)):
         content=jsonable_encoder(rule),
     )
 
+@app.delete("/rules/{name}")
+async def delete_rule(name: str, db: Session = Depends(get_db)):
+    rule = db.query(Rule).filter(Rule.name == name).first()
+    try:
+        if rule:
+            db.delete(rule)
+            db.commit()
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content=jsonable_encoder({"msg": "Rule deleted"}),
+            )
+        else:
+            return JSONResponse(
+                status_code=status.HTTP_404_NOT_FOUND,
+                content=jsonable_encoder({"msg": "Rule not found"}),
+            )
+    except Exception as e:
+        logging.error(f"Error deleting rule({rule}): {e}")
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content=jsonable_encoder({"msg": f"Error deleting rule"}),
+        )
 
 @app.post("/receivers")
 async def create_receiver(
     ireceiver: IReceiver,
     db: Session = Depends(get_db),
 ):
-    receiver = Receiver(**ireceiver.model_dump())
-    db.add(receiver)
-    db.commit()
-    return JSONResponse(
-        status_code=status.HTTP_201_CREATED,
-        content=jsonable_encoder({"msg": "Receiver created"}),
-    )
+    try:
+        receiver = Receiver(**ireceiver.model_dump())
+        db.add(receiver)
+        db.commit()
+        return JSONResponse(
+            status_code=status.HTTP_201_CREATED,
+            content=jsonable_encoder({"msg": "Receiver created"}),
+        )
+    except Exception as e:
+        logging.error(f"Error creating receiver({receiver}): {e}")
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content=jsonable_encoder({"msg": f"Error creating receiver"}),
+        )
 
 
-@app.get("/receivers/")
+@app.get("/receivers")
 async def get_receivers(db: Session = Depends(get_db)):
     receiver = db.query(Receiver).all()
     return JSONResponse(
@@ -153,16 +185,141 @@ async def get_receiver(name: str, db: Session = Depends(get_db)):
     )
 
 
-@app.get("/alerts")
-async def get_alerts(db: Session = Depends(get_db)):
-    alerts = db.query(Alert).all()
+@app.delete("/receivers/{name}")
+async def delete_receiver(name: str, db: Session = Depends(get_db)):
+    receiver = db.query(Receiver).filter(Receiver.name == name).first()
+    try:
+        if receiver:
+            db.delete(receiver)
+            db.commit()
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content=jsonable_encoder({"msg": "Receiver deleted"}),
+            )
+        else:
+            return JSONResponse(
+                status_code=status.HTTP_404_NOT_FOUND,
+                content=jsonable_encoder({"msg": "Receiver not found"}),
+            )
+    except Exception as e:
+        logging.error(f"Error deleting receiver({receiver}): {e}")
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content=jsonable_encoder({"msg": f"Error deleting receiver"}),
+        )
+        
+
+@app.get("/alerts", response_model=Page[Alert])
+async def get_alerts(db: Session = Depends(get_db), chain: Optional[str] = Query(default=None), rule_name: Optional[str] = Query(default=None)):
+    # find all alerts for a given chain and rule_name (if specified) with pagination
+    query = db.query(Alert)
+    if chain:
+        query = query.filter(Alert.chain == chain)
+    if rule_name:
+        query = query.filter(Alert.rule_name == rule_name)
+    alerts = paginate(db, query.order_by(Alert.block_number.desc()))
     return JSONResponse(
         status_code=status.HTTP_200_OK,
         content=jsonable_encoder(alerts),
     )
 
+@cli.command("inject", help="Inject random data for testing")
+def inject(
+    database_url: str = os.getenv("DATABASE_URL"),
+    n_receivers: int = 10,
+    n_rules: int = 10,
+    n_alerts: int = 100,
+):
+    from faker import Faker
+    from faker.providers import DynamicProvider
+    import random
+    random.seed(0)
+    Faker.seed(0)
 
-@cli.command()
+    create_db_engine(database_url, auto_create=True)
+
+    fake = Faker()
+    fake.add_provider(DynamicProvider(provider_name="chain", elements=["eth", "bsc", "polygon", "optimistic", "avalanche"]))
+    fake.add_provider(DynamicProvider(provider_name="scope", elements=["block", "transaction", "receipt"]))
+    
+    db = SessionLocal()
+
+    # Inject receivers
+    try:
+        for _ in range(n_receivers):
+            name = fake.unique.company()
+            url = fake.unique.url()
+            init_args = fake.pydict(nb_elements=3, variable_nb_elements=True, value_types=(str, str))
+            ireceiver = IReceiver(
+                name=name,
+                receiver=url,
+                init_args=init_args,
+            )
+            db.add(Receiver(**ireceiver.model_dump()))
+        db.commit()
+        typer.echo(f"Inject receivers complete")
+    except Exception as e:
+        db.rollback()
+        typer.echo(f"Inject receivers failed, {e}")
+        
+    # Inject rules
+    try:
+        recvrs = [r.name for r in db.query(Receiver).all()]
+        for _ in range(n_rules):
+            name = fake.unique.name()
+            scope = fake.scope()
+            where = fake.pystr()
+            output = fake.sentence(nb_words=10)
+            labels = fake.pydict(nb_elements=3, value_types=(str, str))
+            desc = fake.sentence(nb_words=10)
+            chain = fake.chain()
+            irule = IRule(
+                name=name,
+                scope=scope,
+                description=desc,
+                where=where,
+                output=output,
+                labels=labels,
+                receivers=random.choices(recvrs, k=random.randint(1, 5)),
+                chain=chain,
+            )
+            db.add(Rule(**irule.model_dump()))
+        db.commit()
+        typer.echo(f"Inject rules complete")
+    except Exception as e:
+        db.rollback()
+        typer.echo(f"Inject rules failed, {e}")
+    
+    # Inject alerts
+    try:
+        rules = [r.name for r in db.query(Rule).all()]
+        for _ in range(n_alerts):
+            block_timestamp = fake.date_time_between(start_date="-1y", end_date="now")
+            block_number = fake.pyint()
+            hash = fake.sha256(raw_output=False)
+            rule_name = random.choice(rules)
+            chain = fake.chain()
+            scope = fake.scope()
+            output = fake.sentence(nb_words=10)
+            labels = fake.pydict(nb_elements=3, value_types=(str, str))
+            alert = Alert(
+                block_timestamp=block_timestamp,
+                block_number=block_number,
+                hash=hash,
+                rule_name=rule_name,
+                chain=chain,
+                scope=scope,
+                output=output,
+                labels=labels,
+            )
+            db.add(alert)
+        db.commit()
+        typer.echo(f"Inject alerts complete")
+    except Exception as e:
+        db.rollback()
+        typer.echo(f"Inject alerts failed, {e}")
+
+@cli.command(name="start")
 def start_server(
     database_url: str = os.getenv("DATABASE_URL"),
     port: int = 8000,
