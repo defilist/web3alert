@@ -271,6 +271,28 @@ async def get_alerts(db: Session = Depends(get_db), chain: Optional[str] = None,
         )
 
 
+@app.get("/alerts/{id}")
+async def get_alert_by_id(db: Session = Depends(get_db)) -> AlertResponse:
+    try:
+        query = db.query(Alert).filter(Alert.deleted_at == None)
+        alert = query.filter(Alert.id == id).first()
+        if alert:
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content=jsonable_encoder(alert),
+            )
+        else:
+            return JSONResponse(
+                status_code=status.HTTP_404_NOT_FOUND,
+                content=jsonable_encoder({"msg": "Alert not found"}),
+            )
+    except Exception as e:
+        logging.error(f"Error getting alerts: {e}")
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content=jsonable_encoder({"msg": f"Error getting alerts"}),
+        )
+
 @app.delete("/alerts/{id}")
 async def delete_alert(id: str, db: Session = Depends(get_db)):
     alert = db.query(Alert).filter(Alert.id == id).first()
