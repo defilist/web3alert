@@ -21,7 +21,7 @@ class Rule(Base):
     output: str = Column(String, nullable=True)
     labels: Dict[str, str] = Column(JSONB, nullable=True)
     chain: Optional[str] = Column(String, default="ethereum")
-    created_at: str = Column(DateTime, server_default=sa.func.current_timestamp())
+    created_at: datetime = Column(DateTime, server_default=sa.func.current_timestamp())
     updated_at: str = Column(DateTime, server_default=sa.func.current_timestamp())
 
 

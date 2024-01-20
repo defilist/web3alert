@@ -193,6 +193,34 @@ async def get_receiver(name: str, db: Session = Depends(get_db)):
         content=jsonable_encoder(receiver),
     )
 
+@app.get("/rules/{rule_name}/stats")
+async def get_rule_stats(rule_name: str, db: Session = Depends(get_db)):
+    try:
+        # Get total alerts
+        query = db.query(Alert).filter(Alert.deleted_at == None)
+        query = query.filter(Alert.rule_name == rule_name)
+        total_alerts = query.count()
+        
+        # Get running days        
+        query = db.query(Rule).filter(Rule.name == rule_name)
+        rule: Rule = query.first()
+        if rule:
+            diff = datetime.now() - rule.created_at
+            running_days = diff.days
+            print(datetime.now(), rule.created_at, diff, running_days)
+        else:
+            running_days = 0
+        
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content=jsonable_encoder({"total_alerts": total_alerts, "running_days": running_days}),
+        )
+    except Exception as e:
+        logging.error(f"Error getting receiver stats: {e}")
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content=jsonable_encoder({"msg": f"Error getting receiver stats"}),
+        )
 
 @app.delete("/receivers/{name}")
 async def delete_receiver(name: str, db: Session = Depends(get_db)):
@@ -265,6 +293,7 @@ async def delete_alert(id: str, db: Session = Depends(get_db)):
             status_code=status.HTTP_400_BAD_REQUEST,
             content=jsonable_encoder({"msg": f"Error deleting alert"}),
         )
+
 
 @app.get("/options/rules", response_model=list[str])
 async def get_rule_options(db: Session = Depends(get_db)):
