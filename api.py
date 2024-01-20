@@ -10,7 +10,7 @@ from fastapi.encoders import jsonable_encoder
 from fastapi_pagination import Page, add_pagination
 from fastapi_pagination.ext.sqlalchemy import paginate
 from fastapi.middleware.cors import CORSMiddleware
-
+from datetime import datetime
 
 import typer
 from typer import Typer
@@ -227,9 +227,9 @@ async def get_alerts(db: Session = Depends(get_db), chain: Optional[str] = None,
         if rule_name:
             query = query.filter(Alert.rule_name == rule_name)
         if start:
-            query = query.filter(Alert.block_timestamp >= start)
+            query = query.filter(Alert.block_timestamp >= datetime.fromtimestamp(start))
         if end:
-            query = query.filter(Alert.block_timestamp <= end)
+            query = query.filter(Alert.block_timestamp <= datetime.fromtimestamp(end))
         page = paginate(query.order_by(Alert.block_number.desc()))
         return JSONResponse(
             status_code=status.HTTP_200_OK,
