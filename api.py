@@ -227,9 +227,9 @@ async def get_alerts(db: Session = Depends(get_db), chain: Optional[str] = None,
         if rule_name:
             query = query.filter(Alert.rule_name == rule_name)
         if start:
-            query = query.filter(Alert.block_number >= start)
+            query = query.filter(Alert.block_timestamp >= start)
         if end:
-            query = query.filter(Alert.block_number <= end)
+            query = query.filter(Alert.block_timestamp <= end)
         page = paginate(query.order_by(Alert.block_number.desc()))
         return JSONResponse(
             status_code=status.HTTP_200_OK,
@@ -240,6 +240,30 @@ async def get_alerts(db: Session = Depends(get_db), chain: Optional[str] = None,
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content=jsonable_encoder({"msg": f"Error getting alerts"}),
+        )
+
+
+@app.delete("/alerts/{id}")
+async def delete_alert(id: str, db: Session = Depends(get_db)):
+    alert = db.query(Alert).filter(Alert.id == id).first()
+    try:
+        if alert:
+            db.delete(alert)
+            db.commit()
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content=jsonable_encoder({"msg": "Alert deleted"}),
+            )
+        else:
+            return JSONResponse(
+                status_code=status.HTTP_404_NOT_FOUND,
+                content=jsonable_encoder({"msg": "Alert not found"}),
+            )
+    except Exception as e:
+        logging.error(f"Error deleting alert({alert}): {e}")
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content=jsonable_encoder({"msg": f"Error deleting alert"}),
         )
 
 @app.get("/options/rules", response_model=list[str])
