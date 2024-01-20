@@ -230,7 +230,7 @@ async def get_alerts(db: Session = Depends(get_db), chain: Optional[str] = None,
             query = query.filter(Alert.block_timestamp >= datetime.fromtimestamp(start))
         if end:
             query = query.filter(Alert.block_timestamp <= datetime.fromtimestamp(end))
-        page = paginate(query.order_by(Alert.block_number.desc()))
+        page = paginate(query.order_by(Alert.block_timestamp.desc()))
         return JSONResponse(
             status_code=status.HTTP_200_OK,
             content=jsonable_encoder(page),
