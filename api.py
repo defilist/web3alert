@@ -323,7 +323,7 @@ def inject(
         
     # Inject rules
     try:
-        recvrs = [r.name for r in db.query(Receiver).all()]
+        recvrs = list({r.name for r in db.query(Receiver).all()})
         for _ in range(n_rules):
             name = fake.unique.name()
             scope = fake.scope()
@@ -351,7 +351,7 @@ def inject(
     
     # Inject alerts
     try:
-        rules = [r.name for r in db.query(Rule).all()]
+        rules = list({r.name for r in db.query(Rule).all()})
         for _ in range(n_alerts):
             block_timestamp = fake.date_time_between(start_date="-1y", end_date="now")
             block_number = fake.pyint()
