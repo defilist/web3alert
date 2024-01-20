@@ -271,12 +271,13 @@ async def get_alerts(db: Session = Depends(get_db), chain: Optional[str] = None,
         )
 
 
-@app.get("/alerts/{id}")
-async def get_alert_by_id(db: Session = Depends(get_db)) -> AlertResponse:
+@app.get("/alerts/{alert_id}", response_model=AlertResponse)
+async def get_alert_by_id(alert_id:str, db: Session = Depends(get_db)) -> AlertResponse:
     try:
         query = db.query(Alert).filter(Alert.deleted_at == None)
-        alert = query.filter(Alert.id == id).first()
+        alert:Alert = query.filter(Alert.id == alert_id).first() 
         if alert:
+            alert = AlertResponse(**alert.__dict__)
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
                 content=jsonable_encoder(alert),

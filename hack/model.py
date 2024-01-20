@@ -56,7 +56,7 @@ class Alert(Base):
     __tablename__ = "alerts"
 
     id: str = Column(String, index=True)
-    block_timestamp: int = Column(DateTime, primary_key=True)
+    block_timestamp: datetime = Column(DateTime, primary_key=True)
     block_number: int = Column(Integer, index=True)
     hash: str = Column(String, primary_key=True)
     rule_name: str = Column(String, index=True, primary_key=True)
