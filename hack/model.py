@@ -79,6 +79,8 @@ class AlertResponse(BaseModel):
     scope: str
     output: str
     labels: Dict[str, str]
+    created_at: datetime
+    updated_at: datetime
     
     class Config: 
         json_encoders = {
