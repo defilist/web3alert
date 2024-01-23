@@ -55,7 +55,7 @@ class PostgresReceiver(BaseReceiver):
                 block_timestamp=st,
                 block_number=blknum,
                 hash=hash,
-                rule_id=rule.id,
+                rule_name=rule.id,
                 scope=rule.scope,
                 chain=rule.chain,
                 output=output,
