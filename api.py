@@ -70,6 +70,7 @@ def get_db():
 
 app.dependency_overrides[get_db] = get_db
 
+
 @app.post("/rules")
 async def create_rule(
     irule: IRule,
@@ -132,6 +133,7 @@ async def get_rule(name: str, db: Session = Depends(get_db)):
         content=jsonable_encoder(rule),
     )
 
+
 @app.delete("/rules/{name}")
 async def delete_rule(name: str, db: Session = Depends(get_db)):
     rule = db.query(Rule).filter(Rule.name == name).first()
@@ -152,8 +154,9 @@ async def delete_rule(name: str, db: Session = Depends(get_db)):
         logging.error(f"Error deleting rule({rule}): {e}")
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
-            content=jsonable_encoder({"msg": f"Error deleting rule"}),
+            content=jsonable_encoder({"msg": "Error deleting rule"}),
         )
+
 
 @app.post("/receivers")
 async def create_receiver(
@@ -172,7 +175,7 @@ async def create_receiver(
         logging.error(f"Error creating receiver({receiver}): {e}")
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
-            content=jsonable_encoder({"msg": f"Error creating receiver"}),
+            content=jsonable_encoder({"msg": "Error creating receiver"}),
         )
 
 
@@ -193,6 +196,7 @@ async def get_receiver(name: str, db: Session = Depends(get_db)):
         content=jsonable_encoder(receiver),
     )
 
+
 @app.get("/rules/{rule_name}/stats")
 async def get_rule_stats(rule_name: str, db: Session = Depends(get_db)):
     try:
@@ -200,8 +204,8 @@ async def get_rule_stats(rule_name: str, db: Session = Depends(get_db)):
         query = db.query(Alert).filter(Alert.deleted_at == None)
         query = query.filter(Alert.rule_name == rule_name)
         total_alerts = query.count()
-        
-        # Get running days        
+
+        # Get running days
         query = db.query(Rule).filter(Rule.name == rule_name)
         rule: Rule = query.first()
         if rule:
@@ -210,10 +214,12 @@ async def get_rule_stats(rule_name: str, db: Session = Depends(get_db)):
             print(datetime.now(), rule.created_at, diff, running_days)
         else:
             running_days = 0
-        
+
         return JSONResponse(
             status_code=status.HTTP_200_OK,
-            content=jsonable_encoder({"total_alerts": total_alerts, "running_days": running_days}),
+            content=jsonable_encoder(
+                {"total_alerts": total_alerts, "running_days": running_days}
+            ),
         )
     except Exception as e:
         logging.error(f"Error getting receiver stats: {e}")
@@ -221,6 +227,7 @@ async def get_rule_stats(rule_name: str, db: Session = Depends(get_db)):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content=jsonable_encoder({"msg": f"Error getting receiver stats"}),
         )
+
 
 @app.delete("/receivers/{name}")
 async def delete_receiver(name: str, db: Session = Depends(get_db)):
@@ -244,10 +251,16 @@ async def delete_receiver(name: str, db: Session = Depends(get_db)):
             status_code=status.HTTP_400_BAD_REQUEST,
             content=jsonable_encoder({"msg": f"Error deleting receiver"}),
         )
-        
+
 
 @app.get("/alerts", response_model=Page[AlertResponse])
-async def get_alerts(db: Session = Depends(get_db), chain: Optional[str] = None, rule_name: Optional[str] = None, start: Optional[int]=None, end: Optional[int]=None):
+async def get_alerts(
+    db: Session = Depends(get_db),
+    chain: Optional[str] = None,
+    rule_name: Optional[str] = None,
+    start: Optional[int] = None,
+    end: Optional[int] = None,
+):
     try:
         query = db.query(Alert).filter(Alert.deleted_at == None)
         if chain:
@@ -272,10 +285,12 @@ async def get_alerts(db: Session = Depends(get_db), chain: Optional[str] = None,
 
 
 @app.get("/alerts/{alert_id}", response_model=AlertResponse)
-async def get_alert_by_id(alert_id:str, db: Session = Depends(get_db)) -> AlertResponse:
+async def get_alert_by_id(
+    alert_id: str, db: Session = Depends(get_db)
+) -> AlertResponse:
     try:
         query = db.query(Alert).filter(Alert.deleted_at == None)
-        alert:Alert = query.filter(Alert.id == alert_id).first() 
+        alert: Alert = query.filter(Alert.id == alert_id).first()
         if alert:
             alert = AlertResponse(**alert.__dict__)
             return JSONResponse(
@@ -293,6 +308,7 @@ async def get_alert_by_id(alert_id:str, db: Session = Depends(get_db)) -> AlertR
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content=jsonable_encoder({"msg": f"Error getting alerts"}),
         )
+
 
 @app.delete("/alerts/{id}")
 async def delete_alert(id: str, db: Session = Depends(get_db)):
@@ -333,6 +349,7 @@ async def get_rule_options(db: Session = Depends(get_db)):
             content=jsonable_encoder({"msg": f"Error getting rules"}),
         )
 
+
 @cli.command("inject", help="Inject random data for testing")
 def inject(
     database_url: str = os.getenv("DATABASE_URL"),
@@ -344,15 +361,33 @@ def inject(
     from faker.providers import DynamicProvider
     import uuid
     import random
+
     random.seed(0)
     Faker.seed(0)
 
     create_db_engine(database_url, auto_create=True)
 
     fake = Faker()
-    fake.add_provider(DynamicProvider(provider_name="chain", elements=["mainnet", "bsc", "polygon", "optimism", "avalanche", "sui", "arbitrum"]))
-    fake.add_provider(DynamicProvider(provider_name="scope", elements=["block", "transaction", "receipt"]))
-    
+    fake.add_provider(
+        DynamicProvider(
+            provider_name="chain",
+            elements=[
+                "mainnet",
+                "bsc",
+                "polygon",
+                "optimism",
+                "avalanche",
+                "sui",
+                "arbitrum",
+            ],
+        )
+    )
+    fake.add_provider(
+        DynamicProvider(
+            provider_name="scope", elements=["block", "transaction", "receipt"]
+        )
+    )
+
     db = SessionLocal()
 
     # Inject receivers
@@ -360,7 +395,9 @@ def inject(
         for _ in range(n_receivers):
             name = fake.unique.company()
             url = fake.unique.url()
-            init_args = fake.pydict(nb_elements=3, variable_nb_elements=True, value_types=(str, str))
+            init_args = fake.pydict(
+                nb_elements=3, variable_nb_elements=True, value_types=(str, str)
+            )
             ireceiver = IReceiver(
                 name=name,
                 receiver=url,
@@ -372,7 +409,7 @@ def inject(
     except Exception as e:
         db.rollback()
         typer.echo(f"Inject receivers failed, {e}")
-        
+
     # Inject rules
     try:
         recvrs = list({r.name for r in db.query(Receiver).all()})
@@ -400,7 +437,7 @@ def inject(
     except Exception as e:
         db.rollback()
         typer.echo(f"Inject rules failed, {e}")
-    
+
     # Inject alerts
     try:
         rules = list({r.name for r in db.query(Rule).all()})
@@ -430,6 +467,7 @@ def inject(
     except Exception as e:
         db.rollback()
         typer.echo(f"Inject alerts failed, {e}")
+
 
 @cli.command(name="start")
 def start_server(

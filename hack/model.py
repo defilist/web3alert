@@ -67,7 +67,7 @@ class Alert(Base):
     created_at: int = Column(DateTime, server_default=sa.func.current_timestamp())
     updated_at: int = Column(DateTime, server_default=sa.func.current_timestamp())
     deleted_at: Optional[int] = Column(DateTime, server_default=None)
-    
+
 
 class AlertResponse(BaseModel):
     id: str
@@ -81,8 +81,8 @@ class AlertResponse(BaseModel):
     labels: Dict[str, str]
     created_at: datetime
     updated_at: datetime
-    
-    class Config: 
+
+    class Config:
         json_encoders = {
             datetime: lambda v: int(v.timestamp()),
         }

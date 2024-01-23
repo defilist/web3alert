@@ -45,7 +45,6 @@ logging.basicConfig(
 
 
 class Wechat:
-
     WECHAT_TITLE_COLORS = {
         "green": "info",
         "gray": "comment",
