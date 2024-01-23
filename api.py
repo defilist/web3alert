@@ -225,7 +225,7 @@ async def get_rule_stats(rule_name: str, db: Session = Depends(get_db)):
         logging.error(f"Error getting receiver stats: {e}")
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content=jsonable_encoder({"msg": f"Error getting receiver stats"}),
+            content=jsonable_encoder({"msg": "Error getting receiver stats"}),
         )
 
 
@@ -249,7 +249,7 @@ async def delete_receiver(name: str, db: Session = Depends(get_db)):
         logging.error(f"Error deleting receiver({receiver}): {e}")
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
-            content=jsonable_encoder({"msg": f"Error deleting receiver"}),
+            content=jsonable_encoder({"msg": "Error deleting receiver"}),
         )
 
 
@@ -280,7 +280,7 @@ async def get_alerts(
         logging.error(f"Error getting alerts: {e}")
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content=jsonable_encoder({"msg": f"Error getting alerts"}),
+            content=jsonable_encoder({"msg": "Error getting alerts"}),
         )
 
 
@@ -306,7 +306,7 @@ async def get_alert_by_id(
         logging.error(f"Error getting alerts: {e}")
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content=jsonable_encoder({"msg": f"Error getting alerts"}),
+            content=jsonable_encoder({"msg": "Error getting alerts"}),
         )
 
 
@@ -330,7 +330,7 @@ async def delete_alert(id: str, db: Session = Depends(get_db)):
         logging.error(f"Error deleting alert({alert}): {e}")
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
-            content=jsonable_encoder({"msg": f"Error deleting alert"}),
+            content=jsonable_encoder({"msg": "Error deleting alert"}),
         )
 
 
@@ -346,7 +346,7 @@ async def get_rule_options(db: Session = Depends(get_db)):
         logging.error(f"Error getting rules: {e}")
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content=jsonable_encoder({"msg": f"Error getting rules"}),
+            content=jsonable_encoder({"msg": "Error getting rules"}),
         )
 
 
@@ -372,7 +372,7 @@ def inject(
         DynamicProvider(
             provider_name="chain",
             elements=[
-                "mainnet",
+                "ethereum",
                 "bsc",
                 "polygon",
                 "optimism",
@@ -384,7 +384,7 @@ def inject(
     )
     fake.add_provider(
         DynamicProvider(
-            provider_name="scope", elements=["block", "transaction", "receipt"]
+            provider_name="scope", elements=["block", "tx", "log", "token_xfer"]
         )
     )
 
@@ -405,7 +405,7 @@ def inject(
             )
             db.add(Receiver(**ireceiver.model_dump()))
         db.commit()
-        typer.echo(f"Inject receivers complete")
+        typer.echo("Inject receivers complete")
     except Exception as e:
         db.rollback()
         typer.echo(f"Inject receivers failed, {e}")
@@ -433,7 +433,7 @@ def inject(
             )
             db.add(Rule(**irule.model_dump()))
         db.commit()
-        typer.echo(f"Inject rules complete")
+        typer.echo("Inject rules complete")
     except Exception as e:
         db.rollback()
         typer.echo(f"Inject rules failed, {e}")
@@ -463,7 +463,7 @@ def inject(
             )
             db.add(alert)
         db.commit()
-        typer.echo(f"Inject alerts complete")
+        typer.echo("Inject alerts complete")
     except Exception as e:
         db.rollback()
         typer.echo(f"Inject alerts failed, {e}")
