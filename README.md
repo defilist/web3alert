@@ -11,7 +11,7 @@ hint: if you are running in macOS, use `brew install opensearch` instead.
 eg: run in docker
 
 ```bash
-docker run -d -p 9200:9200 -p 9600:9600 --name opensearch -e "discovery.type=single-node" opensearchproject/opensearch:2
+docker run -d -p 9200:9200 -p 9600:9600 --name opensearch -e "discovery.type=single-node" -e "plugins.security.disabled=true" opensearchproject/opensearch:2
 ```
 
 2. Run OpenSearch-Dashboards 2.6.0
@@ -31,7 +31,7 @@ cp -r web3_soc /path/to/OpenSearch-Dashboards/plugins/
 ```bash
 cd /path/to/OpenSearch-Dashboards/
 cat <<EOF > opensearch_dashboards.yml
-opensearch.hosts: ["https://127.0.0.1:9200"]
+opensearch.hosts: ["http://127.0.0.1:9200"]
 opensearch.username: "admin"
 opensearch.password: "admin"
 opensearch.ssl.verificationMode: none
@@ -42,7 +42,7 @@ Start Opensearch-Dashboards
 
 ```bash
 yarn
-yarn osd:bootstrap
+yarn osd bootstrap
 yarn start
 ```
 

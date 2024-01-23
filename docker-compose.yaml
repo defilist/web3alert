@@ -52,7 +52,6 @@ services:
     command:
       - 'python3'
       - '/app/etl.py'
-      - '--auto-create-db'
     env_file:
       - .env
     volumes:

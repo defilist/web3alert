@@ -1,0 +1,163 @@
+rulesets:
+  - chain: ethereum
+    rules:
+      - id: rule_block_txs_lt_10
+        scope: block
+        where: block.transaction_count < 10
+        description: block.transaction_count < 10
+        output: 'block contains too little transactions({block.transaction_count})'
+        labels:
+          blknum: '{block.number}'
+          miner: '{block.miner}'
+        receivers:
+          - slack_logging
+
+      - id: rule_block_monitor
+        scope: block
+        where: block.number % 1000 == 0
+        description: block monitor 1000 blks/report
+        output: ''
+        labels:
+          blknum: '{block.number}'
+          transactions: '{block.transaction_count}'
+          miner: '{block.miner}'
+          datetime: '{toDateTime(block.timestamp)}'
+        receivers:
+          - slack_logging
+
+      - id: rule_msg_value_ge_100000ETH
+        scope: tx
+        where: tx and tx.value > 100000*1e18 and tx.receipt_status != 0
+        description: tx.value > 100000ETH
+        output: '{tx.from_address[:10]} send {tx.value//1e18}ETH to {tx.to_address[:10]}'
+        labels:
+          blknum: '{tx.block_number}'
+          txhash: '{tx.hash}'
+          from: '{tx.from_label}, {tx.from_address}'
+          to: '{tx.to_label}, {tx.to_address}'
+          value: '{tx.value}'
+          datetime: '{toDateTime(block.timestamp)}'
+          link: '[#etherscan-tx](https://etherscan.io/tx/{tx.hash})'
+        receivers:
+          - slack_logging
+
+      - id: rule_WETH_send_gt_100ETH
+        scope: token_xfer
+        where: token_xfer and token_xfer.token_address == '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2' and token_xfer.value > 100*1e18
+        enabled: false
+        description: WETH send > 100WETH
+        output: 'WETH large token xfer {token_xfer.from_address} send {token_xfer.value//1e18}WETH to {token_xfer.to_address} in block: {token_xfer.block_number} @{toDateTime(token_xfer.block_timestamp)} with txhash: {token_xfer.transaction_hash}'
+        receivers:
+          - slack_logging
+
+      - id: rule_WETH_wrap_to_primitive
+        scope: log
+        enabled: false
+        where: >
+          log
+            and
+          log.address == '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2'
+            and
+          log.topics
+            and
+          (
+            ( log.topics.length > 1 and log.topics[0][:10] == '0xe1fffcc4' and log.topics[1] == '0xd799f16d365bd525e0cb0ed625c499b220b70ca8' )
+              or
+            ( log.topics.length > 2 and log.topics[0][:10] == '0xddf252ad' and log.topics[2] == '0xd799f16d365bd525e0cb0ed625c499b220b70ca8' )
+          )
+        description: weth.balance(victim) > 0 and weth.allowance(victim, primitive) >= weth.balance(victim)
+        condition: >
+          eth_erc20_allowance(
+            owner='0xd799f16d365bd525e0cb0ed625c499b220b70ca8',
+            spender='0x9Daec8D56CDCBDE72abe65F4a5daF8cc0A5bF2f9',
+            token='0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
+            block={log.block_number},
+          ) > 0
+        labels:
+          blknum: '{log.block_number}'
+          txhash: '{log.transaction_hash}'
+          token: WETH
+          primitive: '0xd799f16d365bd525e0cb0ed625c499b220b70ca8'
+          value: '{wei2eth(log.data)}'
+          datetime: '{toDateTime(log.block_timestamp)}'
+          link: '[#etherscan-tx](https://etherscan.io/tx/{log.transaction_hash})'
+        receivers:
+          - slack_logging
+
+  - chain: ethereum
+    rules:
+      - id: rule_contract_eip1967_Upgraded_log
+        scope: log
+        where: >
+          log
+            and
+          log.topics
+            and
+          log.topics[0] == '0xbc7cd75a20ee27fd9adebab32041f755214dbc6bffa90cc0225b39da2e5c2d3b'
+            and
+          log.address in [
+            '0x5aa653a076c1dbb47cec8c1b4d152444cad91941',
+            '0xf49764c9c5d644ece6ae2d18ffd9f1e902629777',
+            '0x8481a6ebaf5c7dabc3f7e09e44a89531fd31f822',
+          ]
+        description: contract(proxy spec is eip1967) is upgraded with new implementation
+        output: ''
+        labels:
+          blknum: '{log.block_number}'
+          txhash: '{log.transaction_hash}'
+          datetime: '{toDateTime(log.block_timestamp)}'
+          contract: '{log.address}'
+          newproxy: '0x{log.topics[1][26:]}'
+          link: '[#etherscan-tx](https://etherscan.io/tx/{log.transaction_hash})'
+        receivers:
+          - slack_logging
+
+  - chain: ethereum
+    rules:
+      - id: rule_audited_contract_eip897_NewImplementation_log
+        scope: log
+        where: >
+          log
+            and
+          log.topics
+            and
+          log.topics[0] == '0xd604de94d45953f9138079ec1b82d533cb2160c906d1076d1f7ed54befbca97a'
+            and
+          log.address in [
+            '0xae7ab96520de3a18e5e111b5eaab095312d7fe84',
+          ]
+
+        description: contract(proxy spec is eip897) is upgraded with new implementation
+        output: ''
+        labels:
+          blknum: '{log.block_number}'
+          txhash: '{log.transaction_hash}'
+          datetime: '{toDateTime(log.block_timestamp)}'
+          contract: '{log.address}'
+          oldproxy: '0x{log.topics[1][26:]}'
+          newproxy: '0x{log.topics[2][26:]}'
+          link: '[#etherscan-tx](https://etherscan.io/tx/{log.transaction_hash})'
+        receivers:
+          - slack_info
+
+      - id: rule_USDC_blacklisted
+        scope: log
+        where: >
+          log
+            and
+          log.address == '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48'
+            and
+          log.topics
+            and
+          log.topics[0] == '0xffa4e6181777692565cf28528fc88fd1516ea86b56da075235fa575af6a4b855'
+        description: USDC Blacklisted
+        output: ''
+        labels:
+          blknum: '{log.block_number}'
+          txhash: '{log.transaction_hash}'
+          datetime: '{toDateTime(log.block_timestamp)}'
+          contract: '{log.address}'
+          blacklist: '0x{log.topics[1][26:]}'
+          link: '[#etherscan-tx](https://etherscan.io/tx/{log.transaction_hash})'
+        receivers:
+          - slack_info
