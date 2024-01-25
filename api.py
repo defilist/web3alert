@@ -473,7 +473,7 @@ def inject(
 def start_server(
     database_url: str = os.getenv("DATABASE_URL"),
     port: int = 8000,
-    auto_create_db: bool = False,
+    auto_create_db: bool = True,
 ):
     create_db_engine(database_url, auto_create=auto_create_db)
     typer.echo("Running FastAPI server...")
